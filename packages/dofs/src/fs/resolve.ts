@@ -226,7 +226,7 @@ function resolveParts(
         throw createWorkspaceError("ELOOP", "too many symlinks resolving path");
       }
       const target = next.link_target ?? "";
-      const resolved = resolveParts(db, canonicalizePath(target).parts, true, follows);
+      const resolved = resolveParts(db, symlinkTargetParts(parts, i, target), true, follows);
       if (resolved === null) {
         return null;
       }
@@ -253,6 +253,15 @@ function resolveParts(
     size: current.size,
     linkTarget: current.link_target ?? undefined,
   };
+}
+
+function symlinkTargetParts(pathParts: string[], linkIndex: number, target: string): string[] {
+  if (target.startsWith("/")) {
+    return canonicalizePath(target).parts;
+  }
+  const parent = pathParts.slice(0, linkIndex).join("/");
+  const path = parent.length === 0 ? `/${target}` : `/${parent}/${target}`;
+  return canonicalizePath(path).parts;
 }
 
 function readNode(db: Database, inode: number): NodeRow | null {
