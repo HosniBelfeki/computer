@@ -115,6 +115,26 @@ describe("resolveInode + symlinks", () => {
     });
   });
 
+  it("resolves relative symlink targets from the link parent", async () => {
+    await withDB(async (db) => {
+      mkdir(db, "/workspace", {}, () => 0);
+      await writeFile(db, "/workspace/target.txt", "content", {}, () => 0);
+      symlink(db, "target.txt", "/workspace/link.txt", () => 0);
+      const node = resolveInode(db, "/workspace/link.txt");
+      expect(node?.type).toBe("file");
+    });
+  });
+
+  it("resolves remaining path segments through relative symlinks", async () => {
+    await withDB(async (db) => {
+      mkdir(db, "/workspace/target", { recursive: true }, () => 0);
+      await writeFile(db, "/workspace/target/file.txt", "content", {}, () => 0);
+      symlink(db, "target", "/workspace/link", () => 0);
+      const node = resolveInode(db, "/workspace/link/file.txt");
+      expect(node?.type).toBe("file");
+    });
+  });
+
   it("follows a chain of symlinks", async () => {
     await withDB(async (db) => {
       await writeFile(db, "/target", "content", {}, () => 0);
